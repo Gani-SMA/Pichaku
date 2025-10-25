@@ -13,14 +13,10 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
-import { env } from "./lib/env";
 
 // Lazy load pages for better performance
 const Results = lazy(() => import("./pages/Results"));
 const Chat = lazy(() => import("./pages/Chat"));
-const Documents = lazy(() => import("./pages/Documents"));
-const Resources = lazy(() => import("./pages/Resources"));
-const News = lazy(() => import("./pages/News"));
 const Auth = lazy(() => import("./pages/Auth"));
 const CaseTracking = lazy(() => import("./pages/CaseTracking"));
 
@@ -29,7 +25,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: (failureCount, error) => {
         // Don't retry on 4xx errors
-        if (error && typeof error === 'object' && 'status' in error) {
+        if (error && typeof error === "object" && "status" in error) {
           const status = error.status as number;
           if (status >= 400 && status < 500) return false;
         }
@@ -59,7 +55,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <div className="min-h-screen flex flex-col">
+              <div className="flex min-h-screen flex-col">
                 <SkipLink href="#main-content">Skip to main content</SkipLink>
                 <SkipLink href="#navigation">Skip to navigation</SkipLink>
                 <Header />
@@ -69,9 +65,6 @@ const App = () => (
                       <Route path="/" element={<Home />} />
                       <Route path="/results" element={<Results />} />
                       <Route path="/chat" element={<Chat />} />
-                      <Route path="/documents" element={<Documents />} />
-                      <Route path="/resources" element={<Resources />} />
-                      <Route path="/news" element={<News />} />
                       <Route path="/auth" element={<Auth />} />
                       <Route path="/case-tracking" element={<CaseTracking />} />
                       <Route path="*" element={<NotFound />} />

@@ -6,6 +6,14 @@ import { Scale, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRateLimit } from "@/hooks/use-rate-limit";
+import { sanitizeInput } from "@/lib/security";
+import { validateResponse, needsRegeneration, logValidation } from "@/utils/responseValidator";
+import {
+  analyzeComplexity,
+  getLawyerRecommendation,
+  isEmergency,
+} from "@/utils/complexityDetector";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -21,16 +29,17 @@ interface Message {
 const Chat = () => {
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { isAllowed, getRemainingRequests } = useRateLimit(10, 60000); // 10 requests per minute
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content: "Hello! I'm your ENACT legal assistant. I'm here to help you understand your legal rights and guide you through the justice system. What legal issue can I help you with today?",
+      content:
+        "Hello! I'm your ENACT legal assistant. I'm here to help you understand your legal rights and guide you through the justice system. What legal issue can I help you with today?",
       timestamp: new Date(),
     },
   ]);
-  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -58,27 +67,52 @@ const Chat = () => {
     const initConversation = async () => {
       if (!user) return;
 
-      // Create new conversation
-      const { data, error } = await supabase
-        .from("conversations")
-        .insert({
-          user_id: user.id,
-          title: "New Legal Consultation",
-        })
-        .select()
-        .single();
+      try {
+        // Create new conversation
+        const { data, error } = await supabase
+          .from("conversations")
+          .insert({
+            user_id: user.id,
+            title: "New Legal Consultation",
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error("Error creating conversation:", error);
+        if (error) {
+          console.error("Error creating conversation:", error);
+
+          // Provide more specific error messages
+          let errorMessage = "Failed to start conversation. ";
+
+          if (error.code === "42P01") {
+            errorMessage += "Database tables not found. Please run migrations.";
+          } else if (error.code === "42501") {
+            errorMessage += "Permission denied. Please check RLS policies.";
+          } else if (error.message.includes("JWT")) {
+            errorMessage += "Authentication error. Please sign in again.";
+          } else {
+            errorMessage += "Please refresh and try again.";
+          }
+
+          toast({
+            title: "Error",
+            description: errorMessage,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data) {
+          setConversationId(data.id);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
         toast({
           title: "Error",
-          description: "Failed to start conversation. Please refresh.",
+          description: "An unexpected error occurred. Please refresh.",
           variant: "destructive",
         });
-        return;
       }
-
-      setConversationId(data.id);
     };
 
     initConversation();
@@ -105,9 +139,12 @@ const Chat = () => {
     }
   };
 
-  const streamChat = async (userMessages: Message[]) => {
+  const streamChat = async (userMessages: Message[], userQuery: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/legal-chat`;
-    
+
+    // Analyze complexity for lawyer recommendation
+    const complexityAnalysis = analyzeComplexity(userQuery);
+
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -115,8 +152,8 @@ const Chat = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ 
-          messages: userMessages.map(m => ({ role: m.role, content: m.content }))
+        body: JSON.stringify({
+          messages: userMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
       });
 
@@ -199,22 +236,54 @@ const Chat = () => {
         }
       }
 
+      // Validate response quality
+      const validation = validateResponse(assistantContent);
+      logValidation(conversationId || "unknown", validation);
+
+      // Add lawyer recommendation if case is complex
+      const lawyerRec = getLawyerRecommendation(complexityAnalysis);
+      const finalContent = lawyerRec ? assistantContent + lawyerRec : assistantContent;
+
       // Finalize the streaming message with a proper ID and save to database
       setMessages((prev) => {
         return prev.map((m) =>
-          m.id === "streaming" ? { ...m, id: Date.now().toString() } : m
+          m.id === "streaming" ? { ...m, id: Date.now().toString(), content: finalContent } : m
         );
       });
 
       // Save assistant response to database
-      if (assistantContent) {
-        await saveMessage("assistant", assistantContent);
+      if (finalContent) {
+        await saveMessage("assistant", finalContent);
+      }
+
+      // Show warning if response quality is low
+      if (!validation.isValid && needsRegeneration(validation)) {
+        toast({
+          title: "Response Quality Notice",
+          description: "The AI response may need improvement. Please verify the information.",
+          variant: "default",
+        });
       }
     } catch (error) {
       console.error("Chat error:", error);
+
+      let errorMessage = "Failed to get response. ";
+
+      if (error instanceof Error) {
+        if (error.message.includes("Failed to fetch")) {
+          errorMessage += "Network error. Check your internet connection.";
+        } else if (error.message.includes("GEMINI_API_KEY")) {
+          errorMessage += "AI service not configured. Please contact support.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += "Please try again.";
+      }
+
       toast({
         title: "Error",
-        description: "Failed to get response. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -223,10 +292,38 @@ const Chat = () => {
   const handleSend = async (messageContent: string) => {
     if (!messageContent.trim() || isLoading || !conversationId) return;
 
+    // Check rate limit
+    const userId = user?.id || "anonymous";
+    if (!isAllowed(userId)) {
+      const remaining = getRemainingRequests(userId);
+      toast({
+        title: "Rate Limit Exceeded",
+        description: `Please wait before sending more messages. ${remaining} requests remaining.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Sanitize user input to prevent XSS
+    const sanitizedContent = sanitizeInput(messageContent.trim());
+
+    // Analyze complexity and check for emergency
+    const complexityAnalysis = analyzeComplexity(sanitizedContent);
+
+    // Show emergency warning if detected
+    if (isEmergency(complexityAnalysis)) {
+      toast({
+        title: "🚨 Emergency Detected",
+        description:
+          "Please call emergency services immediately: Police 112, Women 181, Child 1098",
+        variant: "destructive",
+      });
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: messageContent.trim(),
+      content: sanitizedContent,
       timestamp: new Date(),
     };
 
@@ -237,8 +334,8 @@ const Chat = () => {
     await saveMessage("user", userMessage.content);
 
     const allMessages = [...messages, userMessage];
-    await streamChat(allMessages);
-    
+    await streamChat(allMessages, sanitizedContent);
+
     setIsLoading(false);
   };
 
@@ -248,7 +345,7 @@ const Chat = () => {
 
   if (authLoading) {
     return (
-      <div className="container max-w-5xl py-8 flex items-center justify-center h-[calc(100vh-12rem)]">
+      <div className="container flex h-[calc(100vh-12rem)] max-w-5xl items-center justify-center py-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -272,7 +369,9 @@ const Chat = () => {
                 <p className="text-sm text-muted-foreground">Ask anything about Indian law</p>
               </div>
             </div>
-            <Badge variant="secondary" role="status">Online</Badge>
+            <Badge variant="secondary" role="status">
+              Online
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col p-0">

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Scale, MessageSquare, FileText, MapPin, Newspaper, User, LogOut, LogIn } from "lucide-react";
+import { Scale, MessageSquare, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileNav } from "@/components/MobileNav";
@@ -19,7 +19,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
-  
+
   const isActive = (path: string) => location.pathname === path;
 
   const handleSignOut = async () => {
@@ -34,7 +34,7 @@ const Header = () => {
   const getInitials = (email: string) => {
     return email.charAt(0).toUpperCase();
   };
-  
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -45,8 +45,8 @@ const Header = () => {
             <span className="font-heading text-xl font-bold text-primary">ENACT</span>
           </Link>
         </div>
-        
-        <nav className="hidden md:flex items-center space-x-1">
+
+        <nav className="hidden items-center space-x-1 md:flex">
           <Button
             asChild
             variant={isActive("/") ? "default" : "ghost"}
@@ -55,58 +55,25 @@ const Header = () => {
           >
             <Link to="/">Home</Link>
           </Button>
-              <Button
-                asChild
-                variant={isActive("/chat") ? "default" : "ghost"}
-                size="sm"
-                aria-current={isActive("/chat") ? "page" : undefined}
-              >
-                <Link to="/chat">
-                  <MessageSquare className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Chat Assistant
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive("/documents") ? "default" : "ghost"}
-                size="sm"
-                aria-current={isActive("/documents") ? "page" : undefined}
-              >
-                <Link to="/documents">
-                  <FileText className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Documents
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive("/resources") ? "default" : "ghost"}
-                size="sm"
-                aria-current={isActive("/resources") ? "page" : undefined}
-              >
-                <Link to="/resources">
-                  <MapPin className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Resources
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant={isActive("/news") ? "default" : "ghost"}
-                size="sm"
-                aria-current={isActive("/news") ? "page" : undefined}
-              >
-                <Link to="/news">
-                  <Newspaper className="h-4 w-4 mr-2" aria-hidden="true" />
-                  Legal News
-                </Link>
-              </Button>
+          <Button
+            asChild
+            variant={isActive("/chat") ? "default" : "ghost"}
+            size="sm"
+            aria-current={isActive("/chat") ? "page" : undefined}
+          >
+            <Link to="/chat">
+              <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
+              Chat Assistant
+            </Link>
+          </Button>
         </nav>
 
         <div className="flex items-center space-x-2">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   className="relative h-9 w-9 rounded-full"
                   aria-label="User menu"
                 >

@@ -1,42 +1,52 @@
 import { Link } from "react-router-dom";
-import { Scale, Mail, Phone, MapPin } from "lucide-react";
+import { Scale, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const Footer = () => {
   return (
-    <footer className="border-t bg-muted/30 mt-12">
+    <footer className="mt-12 border-t bg-muted/30">
       <div className="container py-12">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="mb-4 flex items-center gap-2">
               <Scale className="h-6 w-6 text-primary" />
               <span className="font-heading text-xl font-bold text-primary">ENACT</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Empowering Navigation through Accessible Civic Tools. Making justice accessible for every Indian citizen.
+              Empowering Navigation through Accessible Civic Tools. Making justice accessible for
+              every Indian citizen.
             </p>
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
+            <h3 className="mb-4 font-semibold">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
                   Home
                 </Link>
               </li>
               <li>
-                <Link to="/chat" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  to="/chat"
+                  className="text-muted-foreground transition-colors hover:text-primary"
+                >
                   Chat Assistant
                 </Link>
               </li>
               <li>
-                <Link to="/documents" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  to="/documents"
+                  className="text-muted-foreground transition-colors hover:text-primary"
+                >
                   Document Templates
                 </Link>
               </li>
               <li>
-                <Link to="/resources" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  to="/resources"
+                  className="text-muted-foreground transition-colors hover:text-primary"
+                >
                   Legal Resources
                 </Link>
               </li>
@@ -44,7 +54,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Legal Info</h3>
+            <h3 className="mb-4 font-semibold">Legal Info</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>About BNS, BSA & BNSS</li>
               <li>Privacy Policy</li>
@@ -54,7 +64,7 @@ const Footer = () => {
           </div>
 
           <div>
-            <h3 className="font-semibold mb-4">Emergency Helplines</h3>
+            <h3 className="mb-4 font-semibold">Emergency Helplines</h3>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-destructive" />
@@ -74,10 +84,11 @@ const Footer = () => {
 
         <Separator className="my-8" />
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground md:flex-row">
           <p>© 2024 ENACT. All rights reserved. Built for the people of India.</p>
           <p className="text-xs">
-            This platform provides general legal information only and does not constitute legal advice.
+            This platform provides general legal information only and does not constitute legal
+            advice.
           </p>
         </div>
       </div>

@@ -1,6 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Shield, Clock, Users, ChevronRight, Scale, FileText, MessageSquare, Gavel } from "lucide-react";
+import {
+  Search,
+  Shield,
+  Clock,
+  Users,
+  ChevronRight,
+  Scale,
+  MessageSquare,
+  Gavel,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +24,9 @@ const Home = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validation = searchQuerySchema.safeParse({ query: query.trim() });
-    
+
     if (!validation.success) {
       toast({
         title: "Invalid Search",
@@ -26,7 +35,7 @@ const Home = () => {
       });
       return;
     }
-    
+
     if (query.trim()) {
       navigate(`/results?q=${encodeURIComponent(query)}`);
     }
@@ -44,23 +53,26 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-hero py-20 px-4">
-        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+      <section className="relative overflow-hidden bg-gradient-hero px-4 py-20">
+        <div className="bg-grid-white/[0.05] absolute inset-0 bg-[size:20px_20px]" />
         <div className="container relative mx-auto max-w-4xl text-center">
           <Badge className="mb-4 bg-white/20 text-white hover:bg-white/30">
             Powered by AI Legal Intelligence
           </Badge>
           <h1 className="mb-6 font-heading text-4xl font-bold text-white md:text-6xl">
-            Know Your Rights.<br />Navigate Justice.
+            Know Your Rights.
+            <br />
+            Navigate Justice.
           </h1>
           <p className="mb-8 text-lg text-white/90 md:text-xl">
-            Get clear, step-by-step legal guidance in plain language. No jargon, no confusion—just answers.
+            Get clear, step-by-step legal guidance in plain language. No jargon, no confusion—just
+            answers.
           </p>
-          
+
           <form onSubmit={handleSearch} className="mx-auto max-w-2xl">
             <div className="relative">
-              <Search 
-                className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" 
+              <Search
+                className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
                 aria-hidden="true"
               />
               <Input
@@ -82,10 +94,8 @@ const Home = () => {
               </Button>
             </div>
           </form>
-          
-          <p className="mt-4 text-sm text-white/80">
-            Try: "{commonIssues[0]}"
-          </p>
+
+          <p className="mt-4 text-sm text-white/80">Try: "{commonIssues[0]}"</p>
         </div>
       </section>
 
@@ -134,7 +144,7 @@ const Home = () => {
             {commonIssues.map((issue, index) => (
               <Card
                 key={index}
-                className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1"
+                className="cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md"
                 onClick={() => navigate(`/results?q=${encodeURIComponent(issue)}`)}
               >
                 <CardContent className="flex items-center justify-between p-6">
@@ -150,10 +160,8 @@ const Home = () => {
       {/* Features */}
       <section className="bg-muted/50 py-16">
         <div className="container">
-          <h2 className="mb-12 text-center font-heading text-3xl font-bold">
-            How ENACT Helps You
-          </h2>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <h2 className="mb-12 text-center font-heading text-3xl font-bold">How ENACT Helps You</h2>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader>
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
@@ -194,25 +202,6 @@ const Home = () => {
 
             <Card>
               <CardHeader>
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-accent/10">
-                  <FileText className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle>Legal Documents</CardTitle>
-                <CardDescription>
-                  Generate FIRs, legal notices, and complaints with AI assistance
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="ghost" size="sm" asChild>
-                  <a href="/documents">
-                    View Templates <ChevronRight className="ml-1 h-4 w-4" />
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
                 <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-success/10">
                   <Gavel className="h-6 w-6 text-success" />
                 </div>
@@ -242,13 +231,13 @@ const Home = () => {
                 Every Citizen Deserves Justice
               </h2>
               <p className="mb-8 max-w-2xl text-lg text-white/90">
-                ENACT makes legal knowledge accessible to everyone, regardless of education or economic status.
-                Start your journey to justice today.
+                ENACT makes legal knowledge accessible to everyone, regardless of education or
+                economic status. Start your journey to justice today.
               </p>
               <Button
                 size="lg"
                 variant="secondary"
-                onClick={() => document.querySelector('input')?.focus()}
+                onClick={() => document.querySelector("input")?.focus()}
               >
                 Search Your Legal Issue
               </Button>

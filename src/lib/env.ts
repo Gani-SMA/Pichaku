@@ -1,18 +1,33 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  VITE_SUPABASE_PROJECT_ID: z.string().min(1, "Supabase Project ID is required"),
-  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, "Supabase Publishable Key is required"),
-  VITE_SUPABASE_URL: z.string().url("Supabase URL must be a valid URL"),
+  VITE_SUPABASE_PROJECT_ID: z.string().min(1, "VITE_SUPABASE_PROJECT_ID is required"),
+  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, "VITE_SUPABASE_PUBLISHABLE_KEY is required"),
+  VITE_SUPABASE_URL: z.string().url("VITE_SUPABASE_URL must be a valid URL"),
   VITE_ANALYTICS_ID: z.string().optional(),
-  VITE_SENTRY_DSN: z.string().url().optional(),
+  VITE_SENTRY_DSN: z.string().optional(),
 });
 
 function validateEnv() {
   try {
-    return envSchema.parse(import.meta.env);
+    const parsed = envSchema.parse(import.meta.env);
+
+    // Warn if using demo/placeholder values
+    if (
+      parsed.VITE_SUPABASE_PROJECT_ID === "demo" ||
+      parsed.VITE_SUPABASE_PUBLISHABLE_KEY === "demo" ||
+      parsed.VITE_SUPABASE_URL === "https://demo.supabase.co"
+    ) {
+      console.warn(
+        "⚠️ Warning: Using demo Supabase credentials. Please configure proper environment variables."
+      );
+    }
+
+    return parsed;
   } catch (error) {
-    console.error("❌ Environment validation failed:", error);
+    if (import.meta.env.DEV) {
+      console.error("❌ Environment validation failed:", error);
+    }
     throw new Error("Invalid environment configuration. Please check your .env file.");
   }
 }

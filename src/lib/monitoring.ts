@@ -1,4 +1,4 @@
-import { env } from './env';
+import { env } from "./env";
 
 interface ErrorReport {
   message: string;
@@ -7,7 +7,7 @@ interface ErrorReport {
   userAgent: string;
   timestamp: string;
   userId?: string;
-  extra?: Record<string, any>;
+  extra?: Record<string, string | number | boolean | null>;
 }
 
 class ErrorMonitoring {
@@ -17,10 +17,10 @@ class ErrorMonitoring {
     if (this.initialized || !env.VITE_SENTRY_DSN) return;
 
     // Initialize error monitoring (e.g., Sentry)
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       // Set up global error handlers
-      window.addEventListener('error', this.handleError.bind(this));
-      window.addEventListener('unhandledrejection', this.handleRejection.bind(this));
+      window.addEventListener("error", this.handleError.bind(this));
+      window.addEventListener("unhandledrejection", this.handleRejection.bind(this));
 
       this.initialized = true;
     }
@@ -37,13 +37,13 @@ class ErrorMonitoring {
   private handleRejection(event: PromiseRejectionEvent) {
     this.captureException(
       event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
-      { type: 'unhandledrejection' }
+      { type: "unhandledrejection" }
     );
   }
 
-  captureException(error: Error, extra?: Record<string, any>) {
+  captureException(error: Error, extra?: Record<string, string | number | boolean | null>) {
     if (!this.initialized) {
-      console.error('Error (monitoring not initialized):', error);
+      console.error("Error (monitoring not initialized):", error);
       return;
     }
 
@@ -61,11 +61,15 @@ class ErrorMonitoring {
 
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.error('Error Report:', report);
+      console.error("Error Report:", report);
     }
   }
 
-  captureMessage(message: string, level: 'info' | 'warning' | 'error' = 'info', extra?: Record<string, any>) {
+  captureMessage(
+    message: string,
+    level: "info" | "warning" | "error" = "info",
+    extra?: Record<string, string | number | boolean | null>
+  ) {
     if (!this.initialized) return;
 
     const report = {
@@ -80,65 +84,75 @@ class ErrorMonitoring {
     this.sendReport(report);
   }
 
-  setUser(userId: string, email?: string, extra?: Record<string, any>) {
+  setUser(userId: string, email?: string, extra?: Record<string, string | number | boolean>) {
     if (!this.initialized) return;
 
     // Store user context for error reports
-    sessionStorage.setItem('monitoring_user', JSON.stringify({
-      id: userId,
-      email,
-      ...extra,
-    }));
+    sessionStorage.setItem(
+      "monitoring_user",
+      JSON.stringify({
+        id: userId,
+        email,
+        ...extra,
+      })
+    );
   }
 
-  addBreadcrumb(message: string, category?: string, data?: Record<string, any>) {
+  addBreadcrumb(
+    message: string,
+    category?: string,
+    data?: Record<string, string | number | boolean | null>
+  ) {
     if (!this.initialized) return;
 
     const breadcrumb = {
       message,
-      category: category || 'default',
+      category: category || "default",
       timestamp: new Date().toISOString(),
       data,
     };
 
     // Store breadcrumbs for context
-    const breadcrumbs = JSON.parse(sessionStorage.getItem('monitoring_breadcrumbs') || '[]');
+    const breadcrumbs = JSON.parse(sessionStorage.getItem("monitoring_breadcrumbs") || "[]");
     breadcrumbs.push(breadcrumb);
-    
+
     // Keep only last 50 breadcrumbs
     if (breadcrumbs.length > 50) {
       breadcrumbs.shift();
     }
-    
-    sessionStorage.setItem('monitoring_breadcrumbs', JSON.stringify(breadcrumbs));
+
+    sessionStorage.setItem("monitoring_breadcrumbs", JSON.stringify(breadcrumbs));
   }
 
-  private async sendReport(report: any) {
+  private async sendReport(report: Record<string, unknown>) {
     try {
       // Get user context
-      const userContext = sessionStorage.getItem('monitoring_user');
+      const userContext = sessionStorage.getItem("monitoring_user");
       if (userContext) {
         report.user = JSON.parse(userContext);
       }
 
       // Get breadcrumbs
-      const breadcrumbs = sessionStorage.getItem('monitoring_breadcrumbs');
+      const breadcrumbs = sessionStorage.getItem("monitoring_breadcrumbs");
       if (breadcrumbs) {
         report.breadcrumbs = JSON.parse(breadcrumbs);
       }
 
-      // Send to monitoring service
-      if (env.VITE_SENTRY_DSN) {
-        await fetch('/api/monitoring/error', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(report),
-        });
+      // Send to monitoring service (Sentry, LogRocket, etc.)
+      // For now, log to console in development
+      if (import.meta.env.DEV) {
+        console.error("Error Report:", report);
       }
+
+      // In production, you would send to your monitoring service
+      // Example: Sentry SDK would be initialized and used here
+      // if (env.VITE_SENTRY_DSN) {
+      //   Sentry.captureException(report);
+      // }
     } catch (error) {
-      console.error('Failed to send error report:', error);
+      if (import.meta.env.DEV) {
+        console.error("Failed to send error report:", error);
+      }
     }
   }
 }

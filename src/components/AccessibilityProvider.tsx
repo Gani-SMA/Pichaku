@@ -8,7 +8,7 @@ interface AccessibilityContextType {
   };
 }
 
-const AccessibilityContext = createContext<AccessibilityContextType | null>(null);
+export const AccessibilityContext = createContext<AccessibilityContextType | null>(null);
 
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
   const [announcer, setAnnouncer] = useState<HTMLElement | null>(null);
@@ -83,17 +83,5 @@ export function AccessibilityProvider({ children }: { children: React.ReactNode 
     },
   };
 
-  return (
-    <AccessibilityContext.Provider value={value}>
-      {children}
-    </AccessibilityContext.Provider>
-  );
-}
-
-export function useAccessibility() {
-  const context = useContext(AccessibilityContext);
-  if (!context) {
-    throw new Error("useAccessibility must be used within AccessibilityProvider");
-  }
-  return context;
+  return <AccessibilityContext.Provider value={value}>{children}</AccessibilityContext.Provider>;
 }

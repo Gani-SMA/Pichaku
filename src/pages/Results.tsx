@@ -3,7 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Scale, AlertTriangle, CheckCircle2, Phone, Download, Share2, MessageSquare, ChevronRight } from "lucide-react";
+import {
+  Scale,
+  AlertTriangle,
+  CheckCircle2,
+  Phone,
+  Download,
+  Share2,
+  MessageSquare,
+  ChevronRight,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generatePDF } from "@/utils/pdfGenerator";
 import { useToast } from "@/hooks/use-toast";
@@ -14,14 +23,14 @@ const Results = () => {
   const { toast } = useToast();
 
   const handleDownloadPDF = () => {
-    const content = document.querySelector('.results-content')?.innerHTML || '';
+    const content = document.querySelector(".results-content")?.innerHTML || "";
     try {
       generatePDF(`Legal Guidance - ${query}`, content);
       toast({
         title: "PDF Generated",
         description: "Your legal guidance document is being prepared for download.",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Download Failed",
         description: "Unable to generate PDF. Please try again.",
@@ -38,7 +47,7 @@ const Results = () => {
           text: `Get legal guidance for: ${query}`,
           url: window.location.href,
         });
-      } catch (error) {
+      } catch (_error) {
         // User cancelled share
       }
     } else {
@@ -53,7 +62,8 @@ const Results = () => {
 
   return (
     <div className="min-h-screen bg-muted/30 py-8">
-      <div className="container max-w-4xl results-content"
+      <div
+        className="results-content container max-w-4xl"
         role="main"
         aria-label="Legal guidance results"
       >
@@ -61,8 +71,8 @@ const Results = () => {
         <Card className="mb-6 border-l-4 border-l-secondary bg-gradient-card">
           <CardContent className="pt-6">
             <p className="text-lg">
-              We understand dealing with legal issues can be stressful. Let's work through this together
-              and find the right path forward for you.
+              We understand dealing with legal issues can be stressful. Let's work through this
+              together and find the right path forward for you.
             </p>
           </CardContent>
         </Card>
@@ -77,12 +87,12 @@ const Results = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-muted/50 p-4">
-              <p className="text-sm font-medium text-muted-foreground mb-2">You're asking about:</p>
+              <p className="mb-2 text-sm font-medium text-muted-foreground">You're asking about:</p>
               <p className="text-base">{query}</p>
             </div>
             <p>
-              Based on your query, this appears to be a matter involving consumer rights and civil remedies.
-              Let me help you understand your legal position and the steps you can take.
+              Based on your query, this appears to be a matter involving consumer rights and civil
+              remedies. Let me help you understand your legal position and the steps you can take.
             </p>
           </CardContent>
         </Card>
@@ -91,9 +101,7 @@ const Results = () => {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>The Laws That Protect You</CardTitle>
-            <CardDescription>
-              Based on BNS, BSA, and BNSS 2023
-            </CardDescription>
+            <CardDescription>Based on BNS, BSA, and BNSS 2023</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
@@ -101,10 +109,13 @@ const Results = () => {
                 <div className="flex items-start gap-3">
                   <Badge className="mt-1">BNS §420</Badge>
                   <div className="flex-1">
-                    <h4 className="font-semibold mb-1">Cheating and Dishonestly Inducing Delivery of Property</h4>
+                    <h4 className="mb-1 font-semibold">
+                      Cheating and Dishonestly Inducing Delivery of Property
+                    </h4>
                     <p className="text-sm text-muted-foreground">
-                      This section protects you if someone has deceived you into parting with money or property.
-                      It covers situations where false promises were made with intent to cheat.
+                      This section protects you if someone has deceived you into parting with money
+                      or property. It covers situations where false promises were made with intent
+                      to cheat.
                     </p>
                   </div>
                 </div>
@@ -112,12 +123,15 @@ const Results = () => {
 
               <div className="rounded-lg border bg-card p-4">
                 <div className="flex items-start gap-3">
-                  <Badge variant="secondary" className="mt-1">BNSS §173</Badge>
+                  <Badge variant="secondary" className="mt-1">
+                    BNSS §173
+                  </Badge>
                   <div className="flex-1">
-                    <h4 className="font-semibold mb-1">Filing a First Information Report (FIR)</h4>
+                    <h4 className="mb-1 font-semibold">Filing a First Information Report (FIR)</h4>
                     <p className="text-sm text-muted-foreground">
-                      You have the right to file an FIR at any police station. The police are legally
-                      required to register your complaint if it involves a cognizable offense.
+                      You have the right to file an FIR at any police station. The police are
+                      legally required to register your complaint if it involves a cognizable
+                      offense.
                     </p>
                   </div>
                 </div>
@@ -125,12 +139,14 @@ const Results = () => {
 
               <div className="rounded-lg border bg-card p-4">
                 <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">BSA §65</Badge>
+                  <Badge variant="outline" className="mt-1">
+                    BSA §65
+                  </Badge>
                   <div className="flex-1">
-                    <h4 className="font-semibold mb-1">Documentary Evidence</h4>
+                    <h4 className="mb-1 font-semibold">Documentary Evidence</h4>
                     <p className="text-sm text-muted-foreground">
-                      All written agreements, receipts, messages, and digital communications can serve
-                      as evidence. Keep all documentation safe.
+                      All written agreements, receipts, messages, and digital communications can
+                      serve as evidence. Keep all documentation safe.
                     </p>
                   </div>
                 </div>
@@ -150,19 +166,19 @@ const Results = () => {
           <CardContent>
             <ul className="space-y-3">
               <li className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                 <span>You have the right to file a criminal complaint for cheating and fraud</span>
               </li>
               <li className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                 <span>You can demand the return of your money with legal interest</span>
               </li>
               <li className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                 <span>You may claim compensation for mental harassment and financial loss</span>
               </li>
               <li className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
                 <span>Legal aid services are available free of cost if needed</span>
               </li>
             </ul>
@@ -180,14 +196,14 @@ const Results = () => {
               {/* Immediate Actions */}
               <div>
                 <div className="mb-4 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-foreground font-bold text-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
                     1
                   </div>
-                  <h3 className="font-semibold text-lg">Immediate Actions (This Week)</h3>
+                  <h3 className="text-lg font-semibold">Immediate Actions (This Week)</h3>
                 </div>
                 <div className="ml-10 space-y-4">
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="font-medium mb-2">📝 Gather All Evidence</h4>
+                    <h4 className="mb-2 font-medium">📝 Gather All Evidence</h4>
                     <ul className="space-y-1 text-sm text-muted-foreground">
                       <li>• Original agreement or contract documents</li>
                       <li>• Payment receipts, bank statements, transaction records</li>
@@ -201,13 +217,15 @@ const Results = () => {
                   </div>
 
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="font-medium mb-2">📧 Send a Legal Notice</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <h4 className="mb-2 font-medium">📧 Send a Legal Notice</h4>
+                    <p className="mb-2 text-sm text-muted-foreground">
                       Send a formal notice demanding return of money within 15 days
                     </p>
                     <div className="mt-2 rounded bg-muted p-2 text-sm">
-                      <strong>Where:</strong> Registered post or through a lawyer<br/>
-                      <strong>Cost:</strong> ₹500-2,000 (lawyer fees)<br/>
+                      <strong>Where:</strong> Registered post or through a lawyer
+                      <br />
+                      <strong>Cost:</strong> ₹500-2,000 (lawyer fees)
+                      <br />
                       <strong>Timeline:</strong> 2-3 days to prepare and send
                     </div>
                     <Button variant="outline" size="sm" className="mt-2" asChild>
@@ -224,22 +242,31 @@ const Results = () => {
               {/* Short-term Steps */}
               <div>
                 <div className="mb-4 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-bold text-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground">
                     2
                   </div>
-                  <h3 className="font-semibold text-lg">Short-Term Steps (Next 2-4 Weeks)</h3>
+                  <h3 className="text-lg font-semibold">Short-Term Steps (Next 2-4 Weeks)</h3>
                 </div>
                 <div className="ml-10 space-y-4">
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="font-medium mb-2">🚔 File an FIR</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      If the other party doesn't respond or refuses to pay, file a criminal complaint
+                    <h4 className="mb-2 font-medium">🚔 File an FIR</h4>
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      If the other party doesn't respond or refuses to pay, file a criminal
+                      complaint
                     </p>
-                    <div className="mt-2 rounded bg-muted p-2 text-sm space-y-1">
-                      <div><strong>Where:</strong> Nearest police station or cyber crime cell</div>
-                      <div><strong>What to bring:</strong> All evidence, 2 ID proofs, 2 witnesses</div>
-                      <div><strong>Cost:</strong> Free (no charges for FIR)</div>
-                      <div><strong>Timeline:</strong> FIR registered same day</div>
+                    <div className="mt-2 space-y-1 rounded bg-muted p-2 text-sm">
+                      <div>
+                        <strong>Where:</strong> Nearest police station or cyber crime cell
+                      </div>
+                      <div>
+                        <strong>What to bring:</strong> All evidence, 2 ID proofs, 2 witnesses
+                      </div>
+                      <div>
+                        <strong>Cost:</strong> Free (no charges for FIR)
+                      </div>
+                      <div>
+                        <strong>Timeline:</strong> FIR registered same day
+                      </div>
                     </div>
                     <Button variant="outline" size="sm" className="mt-2" asChild>
                       <Link to="/resources">
@@ -249,13 +276,15 @@ const Results = () => {
                   </div>
 
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="font-medium mb-2">⚖️ Consider Consumer Court</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
+                    <h4 className="mb-2 font-medium">⚖️ Consider Consumer Court</h4>
+                    <p className="mb-2 text-sm text-muted-foreground">
                       For civil remedy and compensation (parallel to criminal case)
                     </p>
                     <div className="mt-2 rounded bg-muted p-2 text-sm">
-                      <strong>Timeline:</strong> Cases typically resolve in 3-6 months<br/>
-                      <strong>Cost:</strong> Court fee based on claim amount<br/>
+                      <strong>Timeline:</strong> Cases typically resolve in 3-6 months
+                      <br />
+                      <strong>Cost:</strong> Court fee based on claim amount
+                      <br />
                       <strong>Note:</strong> You can file this yourself or with a lawyer
                     </div>
                   </div>
@@ -267,14 +296,14 @@ const Results = () => {
               {/* Medium-term Process */}
               <div>
                 <div className="mb-4 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                     3
                   </div>
-                  <h3 className="font-semibold text-lg">Follow-Up & Resolution (1-6 Months)</h3>
+                  <h3 className="text-lg font-semibold">Follow-Up & Resolution (1-6 Months)</h3>
                 </div>
                 <div className="ml-10 space-y-4">
                   <div className="rounded-lg border bg-card p-4">
-                    <h4 className="font-medium mb-2">Track Your Case</h4>
+                    <h4 className="mb-2 font-medium">Track Your Case</h4>
                     <p className="text-sm text-muted-foreground">
                       Monitor progress through E-Courts portal. Attend hearings with all documents.
                       Consider mediation if other party shows willingness to settle.
@@ -290,7 +319,7 @@ const Results = () => {
         <Alert className="mb-6 border-l-4 border-l-destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="ml-2">
-            <strong className="block mb-2">Important Warnings:</strong>
+            <strong className="mb-2 block">Important Warnings:</strong>
             <ul className="space-y-1 text-sm">
               <li>• Time limit: File FIR within 3 years of the incident</li>
               <li>• Don't make any payments without proper receipts</li>
@@ -309,19 +338,19 @@ const Results = () => {
           <CardContent className="space-y-3">
             <Button variant="outline" className="w-full justify-start" asChild>
               <Link to="/resources">
-                <Phone className="h-4 w-4 mr-2" />
+                <Phone className="mr-2 h-4 w-4" />
                 Legal Aid Helpline: 1800-123-4567
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
               <Link to="/resources">
-                <Phone className="h-4 w-4 mr-2" />
+                <Phone className="mr-2 h-4 w-4" />
                 Cyber Crime Helpline: 1930
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
               <Link to="/chat">
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <MessageSquare className="mr-2 h-4 w-4" />
                 Ask Follow-up Questions in Chat
               </Link>
             </Button>
@@ -329,28 +358,28 @@ const Results = () => {
         </Card>
 
         {/* Bottom Actions */}
-        <div className="sticky bottom-4 flex gap-3 justify-center bg-background/80 backdrop-blur p-4 rounded-lg border shadow-lg">
-          <Button 
-            variant="outline" 
+        <div className="sticky bottom-4 flex justify-center gap-3 rounded-lg border bg-background/80 p-4 shadow-lg backdrop-blur">
+          <Button
+            variant="outline"
             size="sm"
             onClick={handleDownloadPDF}
             aria-label="Download legal guidance as PDF"
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Download PDF
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={handleShare}
             aria-label="Share this legal guidance"
           >
-            <Share2 className="h-4 w-4 mr-2" />
+            <Share2 className="mr-2 h-4 w-4" />
             Share
           </Button>
           <Button size="sm" asChild>
             <Link to="/chat" aria-label="Continue conversation in chat">
-              <MessageSquare className="h-4 w-4 mr-2" />
+              <MessageSquare className="mr-2 h-4 w-4" />
               Continue in Chat
             </Link>
           </Button>
