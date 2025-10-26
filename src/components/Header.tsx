@@ -71,6 +71,17 @@ const Header = () => {
               {t("header.chatAssistant")}
             </Link>
           </Button>
+          <Button
+            asChild
+            variant={isActive("/case-tracking") ? "default" : "ghost"}
+            size="sm"
+            aria-current={isActive("/case-tracking") ? "page" : undefined}
+          >
+            <Link to="/case-tracking">
+              <Scale className="mr-2 h-4 w-4" aria-hidden="true" />
+              Case Tracking
+            </Link>
+          </Button>
         </nav>
 
         <div className="flex items-center space-x-2">

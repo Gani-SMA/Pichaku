@@ -5,17 +5,21 @@ import { Loader2, Send } from "lucide-react";
 import { chatMessageSchema } from "@/lib/validations";
 import { validateInputLength } from "@/lib/security";
 import { useToast } from "@/hooks/use-toast";
+import { VoiceInputButton } from "@/components/VoiceInputButton";
+import { useTranslation } from "react-i18next";
 
 interface ChatInputProps {
   onSend: (message: string) => Promise<void>;
   isLoading: boolean;
+  autoSendVoice?: boolean;
 }
 
 const MAX_MESSAGE_LENGTH = 2000;
 
-export const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
+export const ChatInput = ({ onSend, isLoading, autoSendVoice = true }: ChatInputProps) => {
   const [input, setInput] = useState("");
   const { toast } = useToast();
+  const { i18n } = useTranslation();
 
   const remainingChars = MAX_MESSAGE_LENGTH - input.length;
   const isNearLimit = remainingChars < 100;
@@ -49,6 +53,17 @@ export const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
     if (!isLoading && trimmedInput) {
       await onSend(trimmedInput);
       setInput("");
+    }
+  };
+
+  // Handle voice transcript completion
+  const handleVoiceTranscript = async (transcript: string) => {
+    if (autoSendVoice) {
+      // Auto-send voice input
+      await onSend(transcript);
+    } else {
+      // Populate input field for user review
+      setInput(transcript);
     }
   };
 
@@ -87,6 +102,11 @@ export const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
           {remainingChars}
         </div>
       </div>
+      <VoiceInputButton
+        onTranscriptComplete={handleVoiceTranscript}
+        language={i18n.language}
+        disabled={isLoading}
+      />
       <Button
         type="submit"
         size="icon"

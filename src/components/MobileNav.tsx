@@ -14,6 +14,7 @@ export const MobileNav = () => {
   const links = [
     { path: "/", label: "Home", icon: Home },
     { path: "/chat", label: "Chat Assistant", icon: MessageSquare },
+    { path: "/case-tracking", label: "Case Tracking", icon: Scale },
   ];
 
   return (

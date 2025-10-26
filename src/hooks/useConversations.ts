@@ -266,7 +266,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
         setIsLoading(false);
       }
     },
-    [userId, toast]
+    [userId, toast, setConversations, setHasMore, loadConversations]
   );
 
   // Initial load

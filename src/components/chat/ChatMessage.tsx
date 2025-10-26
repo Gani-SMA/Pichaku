@@ -35,7 +35,6 @@ export const ChatMessage = memo(
   ({ message, onEdit, onDelete, canEdit = true, canDelete = true }: ChatMessageProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedContent, setEditedContent] = useState(message.content);
-    const [showActions, setShowActions] = useState(false);
 
     const handleSaveEdit = () => {
       if (editedContent.trim() && editedContent !== message.content && onEdit) {
@@ -61,8 +60,6 @@ export const ChatMessage = memo(
     return (
       <div
         className={`group flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
       >
         {message.role === "assistant" && (
           <Avatar className="h-8 w-8 border-2 border-primary/20">
@@ -125,8 +122,8 @@ export const ChatMessage = memo(
               </div>
 
               {/* Edit/Delete Actions */}
-              {showEditDelete && showActions && (
-                <div className="flex items-center justify-end gap-1">
+              {showEditDelete && (
+                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                   {canEdit && (
                     <Button
                       size="icon"

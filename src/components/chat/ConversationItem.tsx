@@ -86,7 +86,7 @@ export const ConversationItem = ({
         title: "Success",
         description: `Conversation exported as ${format.toUpperCase()}`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "Error",
         description: "Failed to export conversation",

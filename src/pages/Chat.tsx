@@ -179,14 +179,18 @@ const Chat = () => {
 
   // Save message to database - memoized to prevent recreation
   const saveMessage = useCallback(
-    async (role: "user" | "assistant", content: string, language?: string) => {
+    async (id: string, role: "user" | "assistant", content: string, language?: string) => {
       if (!conversationId) return;
 
+      // Extract base language code (e.g., 'en' from 'en-US')
+      const langCode = (language || i18n.language).split("-")[0];
+
       const { error } = await supabase.from("messages").insert({
+        id,
         conversation_id: conversationId,
         role,
         content,
-        language: language || i18n.language,
+        language: langCode,
       });
 
       if (error) {
@@ -305,15 +309,16 @@ const Chat = () => {
       const finalContent = lawyerRec ? assistantContent + lawyerRec : assistantContent;
 
       // Finalize the streaming message with a proper ID and save to database
+      const assistantMessageId = crypto.randomUUID();
       setMessages((prev) => {
         return prev.map((m) =>
-          m.id === "streaming" ? { ...m, id: Date.now().toString(), content: finalContent } : m
+          m.id === "streaming" ? { ...m, id: assistantMessageId, content: finalContent } : m
         );
       });
 
       // Save assistant response to database
       if (finalContent) {
-        await saveMessage("assistant", finalContent, i18n.language);
+        await saveMessage(assistantMessageId, "assistant", finalContent, i18n.language);
       }
 
       // Show warning if response quality is low
@@ -381,7 +386,7 @@ const Chat = () => {
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: "user",
       content: sanitizedContent,
       timestamp: new Date(),
@@ -393,7 +398,7 @@ const Chat = () => {
     setIsLoading(true);
 
     // Save user message to database
-    await saveMessage("user", userMessage.content, i18n.language);
+    await saveMessage(userMessage.id, "user", userMessage.content, i18n.language);
 
     const allMessages = [...messages, userMessage];
     await streamChat(allMessages, sanitizedContent);
@@ -487,8 +492,8 @@ const Chat = () => {
                   message={message}
                   onEdit={editMessage}
                   onDelete={deleteMessage}
-                  canEdit={message.role === "user"}
-                  canDelete={message.role === "user"}
+                  canEdit={message.role === "user" && message.id !== "welcome"}
+                  canDelete={message.role === "user" && message.id !== "welcome"}
                 />
               ))}
 
