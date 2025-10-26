@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { Scale, Phone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 
 const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="mt-12 border-t bg-muted/30">
       <div className="container py-12">
@@ -10,20 +13,21 @@ const Footer = () => {
           <div>
             <div className="mb-4 flex items-center gap-2">
               <Scale className="h-6 w-6 text-primary" />
-              <span className="font-heading text-xl font-bold text-primary">ENACT</span>
+              <span className="font-heading text-xl font-bold text-primary">
+                {t("common.appName")}
+              </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Empowering Navigation through Accessible Civic Tools. Making justice accessible for
-              every Indian citizen.
+              {t("common.tagline")}. {t("footer.description")}
             </p>
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">Quick Links</h3>
+            <h3 className="mb-4 font-semibold">{t("footer.quickLinks")}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/" className="text-muted-foreground transition-colors hover:text-primary">
-                  Home
+                  {t("common.home")}
                 </Link>
               </li>
               <li>
@@ -31,7 +35,7 @@ const Footer = () => {
                   to="/chat"
                   className="text-muted-foreground transition-colors hover:text-primary"
                 >
-                  Chat Assistant
+                  {t("header.chatAssistant")}
                 </Link>
               </li>
               <li>
@@ -39,7 +43,7 @@ const Footer = () => {
                   to="/documents"
                   className="text-muted-foreground transition-colors hover:text-primary"
                 >
-                  Document Templates
+                  {t("footer.documentTemplates")}
                 </Link>
               </li>
               <li>
@@ -47,36 +51,36 @@ const Footer = () => {
                   to="/resources"
                   className="text-muted-foreground transition-colors hover:text-primary"
                 >
-                  Legal Resources
+                  {t("footer.legalResources")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">Legal Info</h3>
+            <h3 className="mb-4 font-semibold">{t("footer.legalInfo")}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>About BNS, BSA & BNSS</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
-              <li>Disclaimer</li>
+              <li>{t("footer.aboutBNS")}</li>
+              <li>{t("footer.privacyPolicy")}</li>
+              <li>{t("footer.termsOfService")}</li>
+              <li>{t("footer.disclaimer")}</li>
             </ul>
           </div>
 
           <div>
-            <h3 className="mb-4 font-semibold">Emergency Helplines</h3>
+            <h3 className="mb-4 font-semibold">{t("footer.emergencyHelplines")}</h3>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-destructive" />
-                <span className="font-semibold">Women: 181</span>
+                <span className="font-semibold">{t("footer.women")}: 181</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-destructive" />
-                <span className="font-semibold">Cyber Crime: 1930</span>
+                <span className="font-semibold">{t("footer.cyberCrime")}: 1930</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-destructive" />
-                <span className="font-semibold">Legal Aid: 15100</span>
+                <span className="font-semibold">{t("footer.legalAid")}: 15100</span>
               </li>
             </ul>
           </div>
@@ -85,11 +89,8 @@ const Footer = () => {
         <Separator className="my-8" />
 
         <div className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground md:flex-row">
-          <p>© 2024 ENACT. All rights reserved. Built for the people of India.</p>
-          <p className="text-xs">
-            This platform provides general legal information only and does not constitute legal
-            advice.
-          </p>
+          <p>{t("footer.copyright")}</p>
+          <p className="text-xs">{t("footer.legalNotice")}</p>
         </div>
       </div>
     </footer>

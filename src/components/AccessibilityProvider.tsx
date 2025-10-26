@@ -1,14 +1,5 @@
-import { createContext, useContext, useEffect, useState } from "react";
-
-interface AccessibilityContextType {
-  announceToScreenReader: (message: string) => void;
-  focusManagement: {
-    trapFocus: (element: HTMLElement) => () => void;
-    restoreFocus: (element: HTMLElement | null) => void;
-  };
-}
-
-export const AccessibilityContext = createContext<AccessibilityContextType | null>(null);
+import { useEffect, useState } from "react";
+import { AccessibilityContext } from "@/contexts/AccessibilityContext";
 
 export function AccessibilityProvider({ children }: { children: React.ReactNode }) {
   const [announcer, setAnnouncer] = useState<HTMLElement | null>(null);

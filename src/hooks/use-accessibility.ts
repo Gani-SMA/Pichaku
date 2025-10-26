@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { AccessibilityContext } from "@/components/AccessibilityProvider";
+import { AccessibilityContext } from "@/contexts/AccessibilityContext";
 
 export function useAccessibility() {
   const context = useContext(AccessibilityContext);

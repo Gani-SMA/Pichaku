@@ -2,13 +2,61 @@
 
 /**
  * Sanitize user input to prevent XSS attacks
+ * Enhanced with comprehensive XSS prevention
  */
 export function sanitizeInput(input: string): string {
-  return input
-    .replace(/[<>]/g, "") // Remove angle brackets
-    .replace(/javascript:/gi, "") // Remove javascript: protocol
-    .replace(/on\w+=/gi, "") // Remove event handlers
-    .trim();
+  if (!input || typeof input !== "string") return "";
+
+  return (
+    input
+      // Remove HTML tags
+      .replace(/<[^>]*>/g, "")
+      // Remove javascript: protocol
+      .replace(/javascript:/gi, "")
+      .replace(/data:/gi, "")
+      .replace(/vbscript:/gi, "")
+      // Remove event handlers
+      .replace(/on\w+\s*=/gi, "")
+      // Remove script tags and content
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      // Remove style tags
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      // Remove iframe tags
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+      // Remove object/embed tags
+      .replace(/<(object|embed)[^>]*>/gi, "")
+      // Encode special characters
+      .replace(/[&<>"']/g, (char) => {
+        const entities: Record<string, string> = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#x27;",
+        };
+        return entities[char] || char;
+      })
+      .trim()
+  );
+}
+
+/**
+ * Validate input length to prevent buffer overflow
+ */
+export function validateInputLength(
+  input: string,
+  maxLength: number = 2000
+): { valid: boolean; error?: string } {
+  if (!input) return { valid: true };
+
+  if (input.length > maxLength) {
+    return {
+      valid: false,
+      error: `Input exceeds maximum length of ${maxLength} characters`,
+    };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -197,5 +245,102 @@ export class SecureStorage {
 
   static clear(): void {
     sessionStorage.clear();
+  }
+}
+
+/**
+ * CSRF Token Management
+ */
+export class CSRFProtection {
+  private static readonly TOKEN_KEY = "csrf_token";
+  private static readonly TOKEN_HEADER = "X-CSRF-Token";
+
+  /**
+   * Generate a cryptographically secure CSRF token
+   */
+  static generateToken(): string {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+
+  /**
+   * Get or create CSRF token
+   */
+  static getToken(): string {
+    let token = sessionStorage.getItem(this.TOKEN_KEY);
+
+    if (!token) {
+      token = this.generateToken();
+      sessionStorage.setItem(this.TOKEN_KEY, token);
+    }
+
+    return token;
+  }
+
+  /**
+   * Validate CSRF token
+   */
+  static validateToken(token: string): boolean {
+    const storedToken = sessionStorage.getItem(this.TOKEN_KEY);
+    return storedToken === token && token.length === 64;
+  }
+
+  /**
+   * Add CSRF token to request headers
+   */
+  static addTokenToHeaders(headers: HeadersInit = {}): HeadersInit {
+    return {
+      ...headers,
+      [this.TOKEN_HEADER]: this.getToken(),
+    };
+  }
+
+  /**
+   * Rotate CSRF token (call after sensitive operations)
+   */
+  static rotateToken(): string {
+    const newToken = this.generateToken();
+    sessionStorage.setItem(this.TOKEN_KEY, newToken);
+    return newToken;
+  }
+}
+
+/**
+ * Secure logging utility that redacts sensitive information
+ */
+export class SecureLogger {
+  private static readonly SENSITIVE_PATTERNS = [
+    /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, // Email
+    /\b\d{10,12}\b/g, // Phone numbers
+    /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, // Credit cards
+    /\b[A-Z]{2}\d{2}[A-Z0-9]{13,}\b/g, // IBAN
+    /\bBearer\s+[A-Za-z0-9\-._~+/]+=*\b/gi, // Bearer tokens
+    /\b(password|pwd|secret|token|key)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, // Credentials
+  ];
+
+  private static redactSensitiveData(message: string): string {
+    let redacted = message;
+
+    this.SENSITIVE_PATTERNS.forEach((pattern) => {
+      redacted = redacted.replace(pattern, "[REDACTED]");
+    });
+
+    return redacted;
+  }
+
+  static log(level: "info" | "warn" | "error", message: string, data?: unknown): void {
+    if (import.meta.env.PROD) {
+      // In production, only log errors and redact sensitive data
+      if (level === "error") {
+        const redactedMessage = this.redactSensitiveData(message);
+        console.error(redactedMessage, data ? this.redactSensitiveData(JSON.stringify(data)) : "");
+      }
+    } else {
+      // In development, log everything
+      const logFn =
+        level === "error" ? console.error : level === "warn" ? console.warn : console.log;
+      logFn(message, data || "");
+    }
   }
 }

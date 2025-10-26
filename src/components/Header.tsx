@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
 const Header = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -25,8 +28,8 @@ const Header = () => {
   const handleSignOut = async () => {
     await signOut();
     toast({
-      title: "Signed out",
-      description: "You've been signed out successfully.",
+      title: t("auth.signedOut"),
+      description: t("auth.signedOutDesc"),
     });
     navigate("/");
   };
@@ -42,7 +45,9 @@ const Header = () => {
           <MobileNav />
           <Link to="/" className="flex items-center space-x-2">
             <Scale className="h-6 w-6 text-primary" />
-            <span className="font-heading text-xl font-bold text-primary">ENACT</span>
+            <span className="font-heading text-xl font-bold text-primary">
+              {t("common.appName")}
+            </span>
           </Link>
         </div>
 
@@ -53,7 +58,7 @@ const Header = () => {
             size="sm"
             aria-current={isActive("/") ? "page" : undefined}
           >
-            <Link to="/">Home</Link>
+            <Link to="/">{t("common.home")}</Link>
           </Button>
           <Button
             asChild
@@ -63,19 +68,20 @@ const Header = () => {
           >
             <Link to="/chat">
               <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
-              Chat Assistant
+              {t("header.chatAssistant")}
             </Link>
           </Button>
         </nav>
 
         <div className="flex items-center space-x-2">
+          <LanguageSelector />
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   className="relative h-9 w-9 rounded-full"
-                  aria-label="User menu"
+                  aria-label={t("auth.userMenu")}
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -89,14 +95,14 @@ const Header = () => {
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.email}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.user_metadata?.full_name || "User"}
+                      {user.user_metadata?.full_name || t("auth.fullName")}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>{t("auth.signOut")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -104,7 +110,7 @@ const Header = () => {
             <Button asChild size="sm">
               <Link to="/auth">
                 <LogIn className="mr-2 h-4 w-4" />
-                Sign In
+                {t("auth.signIn")}
               </Link>
             </Button>
           )}

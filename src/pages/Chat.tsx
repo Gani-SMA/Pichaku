@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Scale, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRateLimit } from "@/hooks/use-rate-limit";
@@ -18,31 +19,81 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { QuickQuestions } from "@/components/chat/QuickQuestions";
+import { ChatSkeleton } from "@/components/chat/ChatSkeleton";
+import { useMessages } from "@/hooks/useMessages";
+import { useKeyboardShortcuts, KEYBOARD_SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
+import { useTranslation } from "react-i18next";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  language?: string;
 }
 
 const Chat = () => {
+  const { i18n } = useTranslation();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { isAllowed, getRemainingRequests } = useRateLimit(10, 60000); // 10 requests per minute
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  // Use the new useMessages hook for pagination and optimized loading
+  const {
+    messages: loadedMessages,
+    isLoading: messagesLoading,
+    hasMore,
+    loadMore,
+    addMessage,
+    updateMessage,
+    refresh: refreshMessages,
+  } = useMessages({ conversationId, pageSize: 50 });
+
+  // Combine loaded messages with welcome message
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
+      id: "welcome",
       role: "assistant",
       content:
         "Hello! I'm your ENACT legal assistant. I'm here to help you understand your legal rights and guide you through the justice system. What legal issue can I help you with today?",
       timestamp: new Date(),
     },
   ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
+
+  // Update messages when loaded messages change
+  useEffect(() => {
+    if (loadedMessages.length > 0) {
+      setMessages(loadedMessages);
+    }
+  }, [loadedMessages]);
+
+  // Add keyboard shortcuts
+  useKeyboardShortcuts(
+    [
+      {
+        ...KEYBOARD_SHORTCUTS.NEW_CHAT,
+        callback: () => {
+          // Start new conversation
+          setConversationId(null);
+          refreshMessages();
+          setMessages([
+            {
+              id: "welcome",
+              role: "assistant",
+              content:
+                "Hello! I'm your ENACT legal assistant. I'm here to help you understand your legal rights and guide you through the justice system. What legal issue can I help you with today?",
+              timestamp: new Date(),
+            },
+          ]);
+        },
+      },
+    ],
+    true
+  );
 
   const quickQuestions = [
     "How do I file an FIR?",
@@ -124,20 +175,24 @@ const Chat = () => {
     }
   }, [messages]);
 
-  // Save message to database
-  const saveMessage = async (role: "user" | "assistant", content: string) => {
-    if (!conversationId) return;
+  // Save message to database - memoized to prevent recreation
+  const saveMessage = useCallback(
+    async (role: "user" | "assistant", content: string, language?: string) => {
+      if (!conversationId) return;
 
-    const { error } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      role,
-      content,
-    });
+      const { error } = await supabase.from("messages").insert({
+        conversation_id: conversationId,
+        role,
+        content,
+        language: language || i18n.language,
+      });
 
-    if (error) {
-      console.error("Error saving message:", error);
-    }
-  };
+      if (error) {
+        console.error("Error saving message:", error);
+      }
+    },
+    [conversationId, i18n.language]
+  );
 
   const streamChat = async (userMessages: Message[], userQuery: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/legal-chat`;
@@ -154,6 +209,7 @@ const Chat = () => {
         },
         body: JSON.stringify({
           messages: userMessages.map((m) => ({ role: m.role, content: m.content })),
+          language: i18n.language,
         }),
       });
 
@@ -214,19 +270,21 @@ const Chat = () => {
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
                 if (last?.role === "assistant" && last.id === "streaming") {
+                  // Update existing streaming message using the hook
+                  updateMessage("streaming", assistantContent);
                   return prev.map((m, i) =>
                     i === prev.length - 1 ? { ...m, content: assistantContent } : m
                   );
                 }
-                return [
-                  ...prev,
-                  {
-                    id: "streaming",
-                    role: "assistant",
-                    content: assistantContent,
-                    timestamp: new Date(),
-                  },
-                ];
+                // Add new streaming message
+                const newMsg = {
+                  id: "streaming",
+                  role: "assistant" as const,
+                  content: assistantContent,
+                  timestamp: new Date(),
+                };
+                addMessage(newMsg);
+                return [...prev, newMsg];
               });
             }
           } catch {
@@ -253,7 +311,7 @@ const Chat = () => {
 
       // Save assistant response to database
       if (finalContent) {
-        await saveMessage("assistant", finalContent);
+        await saveMessage("assistant", finalContent, i18n.language);
       }
 
       // Show warning if response quality is low
@@ -327,11 +385,13 @@ const Chat = () => {
       timestamp: new Date(),
     };
 
+    // Add message using the hook for optimistic updates
+    addMessage(userMessage);
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
     // Save user message to database
-    await saveMessage("user", userMessage.content);
+    await saveMessage("user", userMessage.content, i18n.language);
 
     const allMessages = [...messages, userMessage];
     await streamChat(allMessages, sanitizedContent);
@@ -345,8 +405,28 @@ const Chat = () => {
 
   if (authLoading) {
     return (
-      <div className="container flex h-[calc(100vh-12rem)] max-w-5xl items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container max-w-5xl py-8">
+        <Card className="h-[calc(100vh-12rem)]">
+          <CardHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Scale className="h-5 w-5 text-primary" aria-hidden="true" />
+                </div>
+                <div>
+                  <CardTitle>Legal Assistant Chat</CardTitle>
+                  <p className="text-sm text-muted-foreground">Ask anything about Indian law</p>
+                </div>
+              </div>
+              <Badge variant="secondary" role="status">
+                Loading...
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ChatSkeleton />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -377,9 +457,32 @@ const Chat = () => {
         <CardContent className="flex flex-col p-0">
           <ScrollArea className="flex-1 p-6" ref={scrollRef}>
             <div className="space-y-6" role="log" aria-live="polite" aria-label="Chat messages">
+              {/* Load More Button */}
+              {hasMore && messages.length > 1 && (
+                <div className="pb-4 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadMore}
+                    disabled={messagesLoading}
+                    className="text-xs"
+                  >
+                    {messagesLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Load More Messages"
+                    )}
+                  </Button>
+                </div>
+              )}
+
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+
               {isLoading && (
                 <div className="flex gap-3" role="status" aria-label="AI is thinking">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
@@ -390,6 +493,9 @@ const Chat = () => {
                   </div>
                 </div>
               )}
+
+              {/* Loading indicator for initial message load */}
+              {messagesLoading && messages.length === 0 && <ChatSkeleton />}
             </div>
           </ScrollArea>
 

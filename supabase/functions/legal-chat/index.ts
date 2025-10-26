@@ -1,20 +1,130 @@
+/// <reference types="./deno.d.ts" />
+// @ts-expect-error - Deno runtime imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-expect-error - Deno runtime imports
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Clean up old entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (now > value.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000); // Clean up every minute
+
+function checkRateLimit(userId: string): {
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+} {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    // New window or expired window
+    const resetTime = now + RATE_LIMIT_WINDOW;
+    rateLimitMap.set(userId, { count: 1, resetTime });
+    return { allowed: true, remaining: MAX_REQUESTS_PER_WINDOW - 1, resetTime };
+  }
+
+  if (userLimit.count >= MAX_REQUESTS_PER_WINDOW) {
+    // Rate limit exceeded
+    return { allowed: false, remaining: 0, resetTime: userLimit.resetTime };
+  }
+
+  // Increment count
+  userLimit.count++;
+  rateLimitMap.set(userId, userLimit);
+  return {
+    allowed: true,
+    remaining: MAX_REQUESTS_PER_WINDOW - userLimit.count,
+    resetTime: userLimit.resetTime,
+  };
+}
+
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
+    // Get user ID from authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Extract user ID from JWT token
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check rate limit
+    const rateLimit = checkRateLimit(user.id);
+    if (!rateLimit.allowed) {
+      const retryAfter = Math.ceil((rateLimit.resetTime - Date.now()) / 1000);
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please try again later.",
+          retryAfter,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-RateLimit-Limit": MAX_REQUESTS_PER_WINDOW.toString(),
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": rateLimit.resetTime.toString(),
+            "Retry-After": retryAfter.toString(),
+          },
+        }
+      );
+    }
+
+    const { messages, language = "en" } = await req.json();
     // Try both naming conventions for the API key
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("Gemini_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
-    console.log("Processing legal query with", messages.length, "messages");
+    console.log("Processing legal query with", messages.length, "messages in language:", language);
+
+    // Language-specific instructions
+    const languageInstructions: Record<string, string> = {
+      en: "Respond in English.",
+      te: "Respond in Telugu (తెలుగు). Use Telugu script for your entire response. Maintain legal terminology accuracy while using simple, clear Telugu language.",
+      ta: "Respond in Tamil (தமிழ்). Use Tamil script for your entire response. Maintain legal terminology accuracy while using simple, clear Tamil language.",
+      hi: "Respond in Hindi (हिन्दी). Use Devanagari script for your entire response. Maintain legal terminology accuracy while using simple, clear Hindi language.",
+      ml: "Respond in Malayalam (മലയാളം). Use Malayalam script for your entire response. Maintain legal terminology accuracy while using simple, clear Malayalam language.",
+    };
+
+    const languageInstruction = languageInstructions[language] || languageInstructions.en;
 
     const systemPrompt = `You are an expert Indian legal assistant with 20+ years of experience, specialized in:
 - BNS (Bharatiya Nyaya Sanhita, 2023) - India's primary penal code (358 sections)
@@ -210,7 +320,15 @@ FINAL REMINDER
 
 You are not just an AI - you are a trusted legal guide helping fellow Indians access justice. Every citizen deserves equal access to legal knowledge regardless of who they are.
 
-Be warm. Be clear. Be actionable. Be unbiased. Be the lawyer every Indian deserves.`;
+Be warm. Be clear. Be actionable. Be unbiased. Be the lawyer every Indian deserves.
+
+═══════════════════════════════════════════════════════════════
+LANGUAGE INSTRUCTION
+═══════════════════════════════════════════════════════════════
+
+${languageInstruction}
+
+Important: For complex legal terms, provide brief explanations in the same language. Maintain the same structure and formatting regardless of language.`;
 
     // Convert messages to Gemini format and add system prompt
     const geminiMessages = [
@@ -250,8 +368,20 @@ Be warm. Be clear. Be actionable. Be unbiased. Be the lawyer every Indian deserv
       });
     }
 
+    // Get updated rate limit info
+    const updatedLimit = rateLimitMap.get(user.id);
+    const remaining = updatedLimit
+      ? MAX_REQUESTS_PER_WINDOW - updatedLimit.count
+      : MAX_REQUESTS_PER_WINDOW;
+
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-RateLimit-Limit": MAX_REQUESTS_PER_WINDOW.toString(),
+        "X-RateLimit-Remaining": remaining.toString(),
+        "X-RateLimit-Reset": (updatedLimit?.resetTime || Date.now() + RATE_LIMIT_WINDOW).toString(),
+      },
     });
   } catch (e) {
     console.error("Legal chat error:", e);

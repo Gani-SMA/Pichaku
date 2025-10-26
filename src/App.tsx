@@ -1,9 +1,10 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AccessibilityProvider } from "./components/AccessibilityProvider";
@@ -46,39 +47,48 @@ const LoadingFallback = () => (
   </div>
 );
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AccessibilityProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <div className="flex min-h-screen flex-col">
-                <SkipLink href="#main-content">Skip to main content</SkipLink>
-                <SkipLink href="#navigation">Skip to navigation</SkipLink>
-                <Header />
-                <main id="main-content" className="flex-1" role="main">
-                  <Suspense fallback={<LoadingFallback />}>
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/results" element={<Results />} />
-                      <Route path="/chat" element={<Chat />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/case-tracking" element={<CaseTracking />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-              </div>
-            </AuthProvider>
-          </BrowserRouter>
-        </AccessibilityProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  const { i18n } = useTranslation();
+
+  // Update document language attribute when language changes
+  useEffect(() => {
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <AccessibilityProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AuthProvider>
+                <div className="flex min-h-screen flex-col">
+                  <SkipLink href="#main-content">Skip to main content</SkipLink>
+                  <SkipLink href="#navigation">Skip to navigation</SkipLink>
+                  <Header />
+                  <main id="main-content" className="flex-1" role="main">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/results" element={<Results />} />
+                        <Route path="/chat" element={<Chat />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/case-tracking" element={<CaseTracking />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </Suspense>
+                  </main>
+                  <Footer />
+                </div>
+              </AuthProvider>
+            </BrowserRouter>
+          </AccessibilityProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;
