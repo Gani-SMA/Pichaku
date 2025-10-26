@@ -50,6 +50,8 @@ const Chat = () => {
     loadMore,
     addMessage,
     updateMessage,
+    editMessage,
+    deleteMessage,
     refresh: refreshMessages,
   } = useMessages({ conversationId, pageSize: 50 });
 
@@ -480,7 +482,14 @@ const Chat = () => {
               )}
 
               {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  onEdit={editMessage}
+                  onDelete={deleteMessage}
+                  canEdit={message.role === "user"}
+                  canDelete={message.role === "user"}
+                />
               ))}
 
               {isLoading && (

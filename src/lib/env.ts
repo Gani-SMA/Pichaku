@@ -14,6 +14,11 @@ const envSchema = z.object({
     }),
   VITE_ANALYTICS_ID: z.string().optional(),
   VITE_SENTRY_DSN: z.string().url().optional(),
+  VITE_SENTRY_DEBUG: z
+    .string()
+    .optional()
+    .transform((val) => val === "true"),
+  VITE_APP_VERSION: z.string().optional(),
   MODE: z.enum(["development", "production", "test"]).optional(),
   DEV: z.boolean().optional(),
   PROD: z.boolean().optional(),

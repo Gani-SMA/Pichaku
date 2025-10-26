@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import * as Sentry from "@sentry/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, RefreshCw, Home, Bug } from "lucide-react";
@@ -27,28 +28,22 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
-    
-    // Log error to monitoring service in production
-    if (import.meta.env.PROD) {
-      this.logErrorToService(error, errorInfo);
-    }
+
+    // Log error to Sentry
+    Sentry.withScope((scope) => {
+      scope.setContext("errorInfo", {
+        componentStack: errorInfo.componentStack,
+      });
+      scope.setContext("errorBoundary", {
+        errorId: this.state.errorId,
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+      });
+      Sentry.captureException(error);
+    });
 
     this.setState({ errorInfo });
   }
-
-  private logErrorToService = (error: Error, errorInfo: ErrorInfo) => {
-    // In a real app, send to error monitoring service like Sentry
-    const errorData = {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-    };
-    
-    console.error("Error logged:", errorData);
-  };
 
   private handleReset = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined, errorId: undefined });
@@ -74,7 +69,7 @@ Please describe what you were doing when this error occurred:
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50" role="alert">
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4" role="alert">
           <Card className="w-full max-w-lg">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
@@ -93,20 +88,20 @@ Please describe what you were doing when this error occurred:
                   </p>
                 </div>
               )}
-              
+
               {import.meta.env.DEV && this.state.error && (
                 <details className="rounded-md bg-red-50 p-3">
-                  <summary className="text-sm font-medium text-red-800 cursor-pointer">
+                  <summary className="cursor-pointer text-sm font-medium text-red-800">
                     Development Error Details
                   </summary>
-                  <pre className="mt-2 text-xs text-red-700 overflow-auto">
+                  <pre className="mt-2 overflow-auto text-xs text-red-700">
                     {this.state.error.message}
                     {this.state.error.stack}
                   </pre>
                 </details>
               )}
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <Button onClick={this.handleReset} className="w-full">
                   <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
                   Try Again
@@ -120,12 +115,8 @@ Please describe what you were doing when this error occurred:
                   Go Home
                 </Button>
               </div>
-              
-              <Button
-                variant="ghost"
-                onClick={this.handleReportError}
-                className="w-full text-sm"
-              >
+
+              <Button variant="ghost" onClick={this.handleReportError} className="w-full text-sm">
                 <Bug className="mr-2 h-4 w-4" aria-hidden="true" />
                 Report this error
               </Button>

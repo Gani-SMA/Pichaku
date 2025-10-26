@@ -5,6 +5,10 @@ import "./i18n/config";
 import { performanceMonitor } from "./lib/performance";
 import { analytics } from "./lib/analytics";
 import { monitoring } from "./lib/monitoring";
+import { initSentry } from "./lib/sentry";
+
+// Initialize Sentry first for error tracking
+initSentry();
 
 // Initialize monitoring and analytics
 monitoring.init();

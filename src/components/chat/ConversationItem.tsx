@@ -1,4 +1,4 @@
-import { MessageSquare, Trash2, Edit2, Check, X } from "lucide-react";
+import { MessageSquare, Trash2, Edit2, Check, X, Pin, Download, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -14,6 +14,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  exportConversationAsJSON,
+  exportConversationAsText,
+  exportConversationAsMarkdown,
+} from "@/utils/conversationExport";
+import { useToast } from "@/hooks/use-toast";
 
 interface ConversationItemProps {
   id: string;
@@ -22,9 +35,11 @@ interface ConversationItemProps {
   messageCount?: number;
   updatedAt: string;
   isActive?: boolean;
+  isPinned?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onUpdateTitle: (id: string, newTitle: string) => void;
+  onTogglePin?: (id: string, isPinned: boolean) => void;
 }
 
 export const ConversationItem = ({
@@ -34,12 +49,15 @@ export const ConversationItem = ({
   messageCount = 0,
   updatedAt,
   isActive = false,
+  isPinned = false,
   onSelect,
   onDelete,
   onUpdateTitle,
+  onTogglePin,
 }: ConversationItemProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(title);
+  const { toast } = useToast();
 
   const handleSaveTitle = () => {
     if (editedTitle.trim() && editedTitle !== title) {
@@ -55,13 +73,42 @@ export const ConversationItem = ({
 
   const timeAgo = formatDistanceToNow(new Date(updatedAt), { addSuffix: true });
 
+  const handleExport = async (format: "json" | "text" | "markdown") => {
+    try {
+      if (format === "json") {
+        await exportConversationAsJSON(id);
+      } else if (format === "text") {
+        await exportConversationAsText(id);
+      } else {
+        await exportConversationAsMarkdown(id);
+      }
+      toast({
+        title: "Success",
+        description: `Conversation exported as ${format.toUpperCase()}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export conversation",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div
       className={`group relative flex cursor-pointer flex-col gap-2 rounded-lg border p-3 transition-colors hover:bg-accent ${
         isActive ? "border-primary bg-accent" : ""
-      }`}
+      } ${isPinned ? "border-l-4 border-l-primary" : ""}`}
       onClick={() => !isEditing && onSelect(id)}
     >
+      {/* Pin Indicator */}
+      {isPinned && (
+        <div className="absolute right-2 top-2">
+          <Pin className="h-3 w-3 fill-primary text-primary" />
+        </div>
+      )}
+
       {/* Title Section */}
       <div className="flex items-start justify-between gap-2">
         {isEditing ? (
@@ -89,7 +136,10 @@ export const ConversationItem = ({
             <div className="flex flex-1 items-start gap-2">
               <MessageSquare className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
-                <h3 className="truncate text-sm font-medium">{title}</h3>
+                <h3 className="truncate text-sm font-medium">
+                  {title}
+                  {isPinned && <span className="ml-2 text-xs text-muted-foreground">(Pinned)</span>}
+                </h3>
                 {lastMessage && (
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{lastMessage}</p>
                 )}
@@ -107,6 +157,44 @@ export const ConversationItem = ({
               >
                 <Edit2 className="h-3.5 w-3.5" />
               </Button>
+
+              {/* More Actions Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                  {onTogglePin && (
+                    <>
+                      <DropdownMenuItem onClick={() => onTogglePin(id, isPinned)}>
+                        <Pin className="mr-2 h-4 w-4" />
+                        {isPinned ? "Unpin" : "Pin"} Conversation
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => handleExport("json")}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export as JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("text")}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export as Text
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport("markdown")}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export as Markdown
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button

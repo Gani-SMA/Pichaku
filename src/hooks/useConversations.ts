@@ -9,6 +9,7 @@ interface Conversation {
   updated_at: string;
   message_count?: number;
   last_message?: string;
+  is_pinned?: boolean;
 }
 
 interface ConversationData {
@@ -106,13 +107,12 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
     }
   }, [isLoading, hasMore, page, loadConversations]);
 
-  // Delete a conversation (soft delete)
+  // Delete a conversation (hard delete for now)
   const deleteConversation = useCallback(
     async (conversationId: string) => {
       try {
-        const { error } = await supabase.rpc("soft_delete_conversation", {
-          conversation_id: conversationId,
-        });
+        // Delete conversation (this will cascade delete messages if FK is set up)
+        const { error } = await supabase.from("conversations").delete().eq("id", conversationId);
 
         if (error) throw error;
 
@@ -164,6 +164,42 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
         toast({
           title: "Error",
           description: "Failed to update title. Please try again.",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast]
+  );
+
+  // Pin/Unpin conversation
+  const togglePin = useCallback(
+    async (conversationId: string, isPinned: boolean) => {
+      try {
+        const { error } = await supabase
+          .from("conversations")
+          .update({ is_pinned: !isPinned, updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+
+        if (error) throw error;
+
+        // Update local state
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === conversationId
+              ? { ...conv, is_pinned: !isPinned, updated_at: new Date().toISOString() }
+              : conv
+          )
+        );
+
+        toast({
+          title: "Success",
+          description: isPinned ? "Conversation unpinned." : "Conversation pinned.",
+        });
+      } catch (error) {
+        console.error("Error toggling pin:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update conversation. Please try again.",
           variant: "destructive",
         });
       }
@@ -247,6 +283,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
     loadMore,
     deleteConversation,
     updateTitle,
+    togglePin,
     searchConversations,
     refresh: () => loadConversations(0),
   };

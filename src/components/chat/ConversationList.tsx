@@ -33,6 +33,7 @@ export const ConversationList = ({
     loadMore,
     deleteConversation,
     updateTitle,
+    togglePin,
     searchConversations,
   } = useConversations({ userId: user?.id || null });
 
@@ -93,10 +94,12 @@ export const ConversationList = ({
                   lastMessage={conversation.last_message}
                   messageCount={conversation.message_count}
                   updatedAt={conversation.updated_at}
+                  isPinned={conversation.is_pinned}
                   isActive={conversation.id === currentConversationId}
                   onSelect={onSelectConversation}
                   onDelete={deleteConversation}
                   onUpdateTitle={updateTitle}
+                  onTogglePin={togglePin}
                 />
               ))}
 
