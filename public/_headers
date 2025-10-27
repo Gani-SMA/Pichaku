@@ -1,29 +1,13 @@
-# Security Headers for Netlify/Vercel deployment
-# These headers enhance security by preventing various attacks
-
+# Security headers for all pages
 /*
-  # Content Security Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
-  
-  # Prevent clickjacking attacks
   X-Frame-Options: DENY
-  
-  # Prevent MIME type sniffing
   X-Content-Type-Options: nosniff
-  
-  # Enable XSS protection
   X-XSS-Protection: 1; mode=block
-  
-  # Referrer Policy
   Referrer-Policy: strict-origin-when-cross-origin
-  
-  # Permissions Policy (formerly Feature Policy)
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
-  
-  # Strict Transport Security (HSTS) - Force HTTPS
+  Permissions-Policy: camera=(), microphone=(self), geolocation=(), interest-cohort=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  
-  # Cross-Origin policies
-  Cross-Origin-Embedder-Policy: require-corp
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Resource-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://fonts.googleapis.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co https://generativelanguage.googleapis.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Cache static assets
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
