@@ -2,7 +2,7 @@
   "github": {
     "silent": true
   },
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build --loglevel=error",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
@@ -69,7 +69,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(self), geolocation=(), interest-cohort=()"
+          "value": "camera=(), microphone=(self), geolocation=()"
         }
       ]
     }

@@ -21,7 +21,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
-    "prepare": "husky install",
+    "prepare": "husky",
     "backup": "node scripts/backup-database.ps1",
     "restore": "node scripts/restore-database.sh"
   },
@@ -100,7 +100,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
-    "husky": "^8.0.3",
+    "husky": "^9.1.7",
     "jsdom": "^23.0.1",
     "lint-staged": "^15.5.2",
     "lovable-tagger": "^1.1.10",
@@ -109,8 +109,6 @@
     "prettier": "^3.1.0",
     "prettier-plugin-tailwindcss": "^0.5.7",
     "rollup-plugin-visualizer": "^6.0.5",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-react": "^5.29.5",
     "tailwindcss": "^3.4.17",
     "terser": "^5.44.0",
     "typescript": "^5.8.3",
@@ -120,5 +118,20 @@
     "vite-plugin-pwa": "^1.1.0",
     "vitest": "^3.2.4",
     "workbox-window": "^7.3.0"
+  },
+  "overrides": {
+    "glob": "^11.0.0",
+    "inflight": "npm:@zkochan/inflight@^1.0.0",
+    "sourcemap-codec": "@jridgewell/sourcemap-codec",
+    "lodash.get": "lodash",
+    "lodash.isequal": "lodash",
+    "node-domexception": "npm:domexception@^4.0.0",
+    "source-map": "^0.7.4",
+    "prismjs": "^1.30.0"
+  },
+  "resolutions": {
+    "glob": "^11.0.0",
+    "inflight": "@zkochan/inflight@^1.0.0",
+    "sourcemap-codec": "@jridgewell/sourcemap-codec"
   }
 }
