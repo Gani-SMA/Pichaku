@@ -28,6 +28,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
+    outDir: "dist",
+    assetsDir: "assets",
     rollupOptions: {
       output: {
         manualChunks: (id) => {
@@ -64,10 +66,12 @@ export default defineConfig(({ mode }) => ({
             return "tanstack";
           }
         },
-        // Optimize chunk file names
+        // Optimize chunk file names - ensure .js extension
         chunkFileNames: "assets/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
+        // Ensure proper format
+        format: "es",
       },
     },
     sourcemap: mode === "development",
@@ -83,6 +87,10 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     // Enable CSS code splitting
     cssCodeSplit: true,
+    // Ensure proper module preload
+    modulePreload: {
+      polyfill: true,
+    },
   },
   define: {
     __DEV__: mode === "development",
