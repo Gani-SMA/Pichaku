@@ -32,40 +32,7 @@ export default defineConfig(({ mode }) => ({
     assetsDir: "assets",
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // React core
-          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) {
-            return "react-vendor";
-          }
-          // React Router
-          if (id.includes("node_modules/react-router")) {
-            return "router";
-          }
-          // Radix UI components
-          if (id.includes("node_modules/@radix-ui")) {
-            return "radix-ui";
-          }
-          // Supabase
-          if (id.includes("node_modules/@supabase")) {
-            return "supabase";
-          }
-          // i18n
-          if (id.includes("node_modules/i18next") || id.includes("node_modules/react-i18next")) {
-            return "i18n";
-          }
-          // Utilities
-          if (
-            id.includes("node_modules/date-fns") ||
-            id.includes("node_modules/clsx") ||
-            id.includes("node_modules/tailwind-merge")
-          ) {
-            return "utils";
-          }
-          // Tanstack Query
-          if (id.includes("node_modules/@tanstack")) {
-            return "tanstack";
-          }
-        },
+        manualChunks: undefined,
         // Optimize chunk file names - ensure .js extension
         chunkFileNames: "assets/[name]-[hash].js",
         entryFileNames: "assets/[name]-[hash].js",
