@@ -1,4 +1,6 @@
 import { CSRFProtection, SecureLogger } from "./security";
+import { RETRY_CONFIG, TIMEOUTS } from "./constants";
+import { trackAPICall, captureException } from "./sentry";
 
 interface RequestConfig extends RequestInit {
   retries?: number;
@@ -13,12 +15,60 @@ interface ApiError extends Error {
 
 export class ApiClient {
   private baseUrl: string;
-  private defaultRetries: number = 3;
-  private defaultRetryDelay: number = 1000;
-  private defaultTimeout: number = 30000;
+  private defaultRetries: number = RETRY_CONFIG.MAX_RETRIES;
+  private defaultRetryDelay: number = RETRY_CONFIG.INITIAL_DELAY;
+  private defaultTimeout: number = TIMEOUTS.API_REQUEST;
+  private signingKey: CryptoKey | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    this.initializeSigningKey();
+  }
+
+  /**
+   * Initialize signing key for request signatures
+   */
+  private async initializeSigningKey(): Promise<void> {
+    try {
+      // Generate or retrieve signing key
+      const keyData = sessionStorage.getItem("api_signing_key");
+
+      if (keyData) {
+        this.signingKey = await crypto.subtle.importKey(
+          "jwk",
+          JSON.parse(keyData),
+          { name: "HMAC", hash: "SHA-256" },
+          true,
+          ["sign", "verify"]
+        );
+      } else {
+        this.signingKey = await crypto.subtle.generateKey({ name: "HMAC", hash: "SHA-256" }, true, [
+          "sign",
+          "verify",
+        ]);
+
+        const exportedKey = await crypto.subtle.exportKey("jwk", this.signingKey);
+        sessionStorage.setItem("api_signing_key", JSON.stringify(exportedKey));
+      }
+    } catch (error) {
+      SecureLogger.log("error", "Failed to initialize signing key", error);
+    }
+  }
+
+  /**
+   * Sign request for integrity verification
+   */
+  private async signRequest(body: string, timestamp: string): Promise<string | null> {
+    if (!this.signingKey) return null;
+
+    try {
+      const data = new TextEncoder().encode(body + timestamp);
+      const signature = await crypto.subtle.sign("HMAC", this.signingKey, data);
+      return btoa(String.fromCharCode(...new Uint8Array(signature)));
+    } catch (error) {
+      SecureLogger.log("error", "Failed to sign request", error);
+      return null;
+    }
   }
 
   /**
@@ -54,6 +104,7 @@ export class ApiClient {
 
     const url = `${this.baseUrl}${endpoint}`;
     let lastError: ApiError | null = null;
+    const startTime = performance.now();
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -61,12 +112,25 @@ export class ApiClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-        // Add CSRF token to headers for state-changing operations
-        const requestHeaders = ["POST", "PUT", "DELETE", "PATCH"].includes(
-          fetchConfig.method || "GET"
-        )
-          ? CSRFProtection.addTokenToHeaders(headers)
-          : headers;
+        // Add CSRF token and request signature for state-changing operations
+        let requestHeaders = headers;
+
+        if (["POST", "PUT", "DELETE", "PATCH"].includes(fetchConfig.method || "GET")) {
+          requestHeaders = CSRFProtection.addTokenToHeaders(headers);
+
+          // Add request signature
+          const timestamp = Date.now().toString();
+          const body = fetchConfig.body ? String(fetchConfig.body) : "";
+          const signature = await this.signRequest(body, timestamp);
+
+          if (signature) {
+            requestHeaders = {
+              ...requestHeaders,
+              "X-Signature": signature,
+              "X-Timestamp": timestamp,
+            };
+          }
+        }
 
         const response = await fetch(url, {
           ...fetchConfig,
@@ -99,7 +163,10 @@ export class ApiClient {
         // Parse response
         const data = await response.json();
 
+        const duration = performance.now() - startTime;
         SecureLogger.log("info", `API request successful: ${endpoint}`);
+        trackAPICall(endpoint, duration, response.status);
+
         return data as T;
       } catch (error) {
         lastError = error as ApiError;
@@ -113,7 +180,10 @@ export class ApiClient {
 
         // Don't retry if not retryable or last attempt
         if (!this.isRetryableError(lastError) || attempt === retries) {
+          const duration = performance.now() - startTime;
           SecureLogger.log("error", `API request failed: ${endpoint}`, lastError);
+          trackAPICall(endpoint, duration, lastError.status || 0);
+          captureException(lastError, { endpoint, attempt, duration });
           throw lastError;
         }
 

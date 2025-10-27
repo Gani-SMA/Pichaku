@@ -21,7 +21,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "backup": "node scripts/backup-database.ps1",
+    "restore": "node scripts/restore-database.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

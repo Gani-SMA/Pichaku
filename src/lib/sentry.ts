@@ -168,3 +168,66 @@ export function setTag(key: string, value: string) {
 export function setContext(name: string, context: Record<string, unknown>) {
   Sentry.setContext(name, context);
 }
+
+/**
+ * Track custom metrics
+ */
+export function trackMetric(name: string, value: number, unit: string = "none") {
+  Sentry.metrics.gauge(name, value, {
+    unit,
+    tags: {
+      environment: env.MODE || "unknown",
+    },
+  });
+}
+
+/**
+ * Track API call performance
+ */
+export function trackAPICall(endpoint: string, duration: number, status: number) {
+  addBreadcrumb(`API Call: ${endpoint}`, "api", status >= 400 ? "error" : "info", {
+    endpoint,
+    duration,
+    status,
+  });
+
+  trackMetric("api.response_time", duration, "millisecond");
+
+  if (status >= 400) {
+    trackMetric("api.error_count", 1);
+  }
+}
+
+/**
+ * Track user action
+ */
+export function trackUserAction(action: string, data?: Record<string, unknown>) {
+  addBreadcrumb(action, "user", "info", data);
+}
+
+/**
+ * Configure Sentry alerts (to be set up in Sentry dashboard)
+ * This is documentation for what alerts should be configured
+ */
+export const RECOMMENDED_ALERTS = {
+  errorRate: {
+    name: "High Error Rate",
+    condition: "Error rate > 5% over 5 minutes",
+    severity: "critical",
+  },
+  slowAPI: {
+    name: "Slow API Responses",
+    condition: "P95 response time > 3 seconds",
+    severity: "warning",
+  },
+  authFailures: {
+    name: "Authentication Failures",
+    condition: "> 10 auth failures in 5 minutes",
+    severity: "high",
+  },
+  crashRate: {
+    name: "High Crash Rate",
+    condition: "Crash rate > 1% over 10 minutes",
+    severity: "critical",
+  },
+};

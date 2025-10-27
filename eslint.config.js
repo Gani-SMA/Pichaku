@@ -40,6 +40,10 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      // Enforce consistent error handling
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+      // Enforce consistent naming
+      camelcase: ["warn", { properties: "never", ignoreDestructuring: true }],
     },
   }
 );

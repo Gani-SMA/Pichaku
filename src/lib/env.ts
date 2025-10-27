@@ -48,6 +48,20 @@ function validateEnv() {
   }
 }
 
+// Runtime check to prevent accidental secret exposure
+const FORBIDDEN_PATTERNS = ["SECRET", "PRIVATE", "PASSWORD", "API_KEY", "SERVICE_ROLE"];
+Object.keys(import.meta.env).forEach((key) => {
+  if (key.startsWith("VITE_")) {
+    FORBIDDEN_PATTERNS.forEach((pattern) => {
+      if (key.includes(pattern) && key !== "VITE_SUPABASE_PUBLISHABLE_KEY") {
+        throw new Error(
+          `Security Error: ${key} should not use VITE_ prefix. Sensitive data will be exposed in client bundle!`
+        );
+      }
+    });
+  }
+});
+
 export const env = validateEnv();
 
 // Type-safe environment variables

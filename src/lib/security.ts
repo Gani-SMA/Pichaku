@@ -1,5 +1,7 @@
 // Security utilities and configurations
 
+import { INPUT_LIMITS, SECURITY, RATE_LIMITS } from "./constants";
+
 /**
  * Sanitize user input to prevent XSS attacks
  * Enhanced with comprehensive XSS prevention
@@ -9,7 +11,15 @@ export function sanitizeInput(input: string): string {
 
   return (
     input
-      // Remove HTML tags
+      // Remove script tags and content FIRST
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      // Remove style tags and content
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      // Remove iframe tags and content
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+      // Remove object/embed tags
+      .replace(/<(object|embed)[^>]*>/gi, "")
+      // Remove ALL HTML tags
       .replace(/<[^>]*>/g, "")
       // Remove javascript: protocol
       .replace(/javascript:/gi, "")
@@ -17,14 +27,6 @@ export function sanitizeInput(input: string): string {
       .replace(/vbscript:/gi, "")
       // Remove event handlers
       .replace(/on\w+\s*=/gi, "")
-      // Remove script tags and content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-      // Remove style tags
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
-      // Remove iframe tags
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
-      // Remove object/embed tags
-      .replace(/<(object|embed)[^>]*>/gi, "")
       // Encode special characters
       .replace(/[&<>"']/g, (char) => {
         const entities: Record<string, string> = {
@@ -45,7 +47,7 @@ export function sanitizeInput(input: string): string {
  */
 export function validateInputLength(
   input: string,
-  maxLength: number = 2000
+  maxLength: number = INPUT_LIMITS.MAX_MESSAGE_LENGTH
 ): { valid: boolean; error?: string } {
   if (!input) return { valid: true };
 
@@ -78,17 +80,27 @@ export function sanitizeUrl(url: string): string {
 }
 
 /**
+ * Generate CSP nonce for inline scripts
+ */
+export function generateCSPNonce(): string {
+  const array = new Uint8Array(16);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array));
+}
+
+/**
  * Content Security Policy configuration
  * Note: 'unsafe-inline' and 'unsafe-eval' are only for development
  * In production builds, these should be removed
  */
-export const getCSPConfig = () => {
+export const getCSPConfig = (nonce?: string) => {
   const isDev = import.meta.env.DEV;
 
   return {
     "default-src": ["'self'"],
     "script-src": [
       "'self'",
+      ...(nonce ? [`'nonce-${nonce}'`] : []),
       ...(isDev ? ["'unsafe-inline'", "'unsafe-eval'"] : []), // Only in development
       "https://fonts.googleapis.com",
       "https://www.googletagmanager.com",
@@ -115,8 +127,8 @@ export class RateLimiter {
   private requests: Map<string, number[]> = new Map();
 
   constructor(
-    private maxRequests: number = 10,
-    private windowMs: number = 60000 // 1 minute
+    private maxRequests: number = RATE_LIMITS.REQUESTS_PER_MINUTE,
+    private windowMs: number = RATE_LIMITS.WINDOW_MS
   ) {}
 
   isAllowed(identifier: string): boolean {
@@ -249,6 +261,25 @@ export class SecureStorage {
 }
 
 /**
+ * Generate a cryptographically secure CSRF token
+ * Exported for testing
+ */
+export function generateCSRFToken(): string {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Validate CSRF token
+ * Exported for testing
+ */
+export function validateCSRFToken(token: string): boolean {
+  const storedToken = sessionStorage.getItem("csrf_token");
+  return storedToken === token && token.length === SECURITY.CSRF_TOKEN_LENGTH;
+}
+
+/**
  * CSRF Token Management
  */
 export class CSRFProtection {
@@ -259,9 +290,7 @@ export class CSRFProtection {
    * Generate a cryptographically secure CSRF token
    */
   static generateToken(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return generateCSRFToken();
   }
 
   /**
@@ -282,8 +311,7 @@ export class CSRFProtection {
    * Validate CSRF token
    */
   static validateToken(token: string): boolean {
-    const storedToken = sessionStorage.getItem(this.TOKEN_KEY);
-    return storedToken === token && token.length === 64;
+    return validateCSRFToken(token);
   }
 
   /**
@@ -319,7 +347,11 @@ export class SecureLogger {
     /\b(password|pwd|secret|token|key)\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, // Credentials
   ];
 
-  private static redactSensitiveData(message: string): string {
+  /**
+   * Redact sensitive data from message
+   * Public for testing purposes
+   */
+  static redactSensitiveData(message: string): string {
     let redacted = message;
 
     this.SENSITIVE_PATTERNS.forEach((pattern) => {

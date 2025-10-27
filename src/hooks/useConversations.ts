@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PAGINATION, SUCCESS_MESSAGES, ERROR_MESSAGES } from "@/lib/constants";
 
 interface Conversation {
   id: string;
@@ -29,7 +30,10 @@ interface UseConversationsOptions {
   pageSize?: number;
 }
 
-export function useConversations({ userId, pageSize = 20 }: UseConversationsOptions) {
+export function useConversations({
+  userId,
+  pageSize = PAGINATION.CONVERSATIONS_PAGE_SIZE,
+}: UseConversationsOptions) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -90,7 +94,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
         console.error("Error loading conversations:", error);
         toast({
           title: "Error",
-          description: "Failed to load conversations. Please try again.",
+          description: ERROR_MESSAGES.GENERIC_ERROR,
           variant: "destructive",
         });
       } finally {
@@ -121,7 +125,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
 
         toast({
           title: "Success",
-          description: "Conversation deleted successfully.",
+          description: SUCCESS_MESSAGES.CONVERSATION_DELETED,
         });
       } catch (error) {
         console.error("Error deleting conversation:", error);
@@ -157,7 +161,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
 
         toast({
           title: "Success",
-          description: "Conversation title updated.",
+          description: SUCCESS_MESSAGES.CONVERSATION_UPDATED,
         });
       } catch (error) {
         console.error("Error updating title:", error);
@@ -217,6 +221,9 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
 
       setIsLoading(true);
       try {
+        // Sanitize query to prevent SQL injection
+        const sanitizedQuery = query.replace(/[%_]/g, "\\$&").trim();
+
         const { data, error } = await supabase
           .from("conversations")
           .select(
@@ -234,7 +241,7 @@ export function useConversations({ userId, pageSize = 20 }: UseConversationsOpti
           )
           .eq("user_id", userId)
           .is("deleted_at", null)
-          .or(`title.ilike.%${query}%,messages.content.ilike.%${query}%`)
+          .or(`title.ilike.%${sanitizedQuery}%,messages.content.ilike.%${sanitizedQuery}%`)
           .order("updated_at", { ascending: false })
           .limit(20);
 

@@ -4,6 +4,7 @@
  */
 
 import { env } from "./env";
+import { INPUT_LIMITS, RATE_LIMITS } from "./constants";
 
 interface AppConfig {
   supabase: {
@@ -42,10 +43,10 @@ export function getPublicConfig(): AppConfig {
       pwa: true,
     },
     limits: {
-      maxMessageLength: 2000,
+      maxMessageLength: INPUT_LIMITS.MAX_MESSAGE_LENGTH,
       rateLimit: {
-        requests: 10,
-        windowMs: 60000, // 1 minute
+        requests: RATE_LIMITS.REQUESTS_PER_MINUTE,
+        windowMs: RATE_LIMITS.WINDOW_MS,
       },
     },
     version: env.VITE_APP_VERSION || "1.0.0",

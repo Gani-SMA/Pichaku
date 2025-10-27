@@ -1,6 +1,3 @@
-# Dependabot configuration for automated dependency updates
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
   # Enable version updates for npm
@@ -13,9 +10,9 @@ updates:
       timezone: "Asia/Kolkata"
     open-pull-requests-limit: 10
     reviewers:
-      - "Gani-SMA"
+      - "your-github-username"
     assignees:
-      - "Gani-SMA"
+      - "your-github-username"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
@@ -23,7 +20,7 @@ updates:
     labels:
       - "dependencies"
       - "automated"
-    # Group updates by type
+    # Group updates
     groups:
       production-dependencies:
         dependency-type: "production"
@@ -37,17 +34,10 @@ updates:
           - "patch"
     # Ignore specific dependencies
     ignore:
-      # Ignore major version updates for now
-      - dependency-name: "*"
+      - dependency-name: "react"
         update-types: ["version-update:semver-major"]
-    # Allow specific dependencies to update
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "indirect"
-    # Rebase strategy
-    rebase-strategy: "auto"
-    # Target branch
-    target-branch: "main"
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
@@ -55,14 +45,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "09:00"
-      timezone: "Asia/Kolkata"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "Gani-SMA"
     commit-message:
       prefix: "ci"
-      include: "scope"
     labels:
       - "ci"
       - "automated"

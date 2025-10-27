@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { useMessages } from "../useMessages";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -78,7 +78,9 @@ describe("useMessages", () => {
       timestamp: new Date(),
     };
 
-    result.current.addMessage(newMessage);
+    act(() => {
+      result.current.addMessage(newMessage);
+    });
 
     expect(result.current.messages).toContainEqual(newMessage);
   });
@@ -93,8 +95,13 @@ describe("useMessages", () => {
       timestamp: new Date(),
     };
 
-    result.current.addMessage(message);
-    result.current.updateMessage("1", "Hello World");
+    act(() => {
+      result.current.addMessage(message);
+    });
+
+    act(() => {
+      result.current.updateMessage("1", "Hello World");
+    });
 
     expect(result.current.messages[0].content).toBe("Hello World");
   });
@@ -109,8 +116,13 @@ describe("useMessages", () => {
       timestamp: new Date(),
     };
 
-    result.current.addMessage(message);
-    result.current.removeMessage("1");
+    act(() => {
+      result.current.addMessage(message);
+    });
+
+    act(() => {
+      result.current.removeMessage("1");
+    });
 
     expect(result.current.messages).toHaveLength(0);
   });

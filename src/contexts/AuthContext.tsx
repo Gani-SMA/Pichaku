@@ -52,20 +52,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error("Auth session error:", error);
+          // Fallback to logged out state on error
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
 
-      // Update Sentry user context
-      if (session?.user) {
-        setSentryUser({
-          id: session.user.id,
-          email: session.user.email,
-        });
-      }
-
-      setIsLoading(false);
-    });
+          // Update Sentry user context
+          if (session?.user) {
+            setSentryUser({
+              id: session.user.id,
+              email: session.user.email,
+            });
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Fatal auth error:", error);
+        // Ensure we don't leave user in loading state
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);

@@ -110,6 +110,16 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Largest Files:" >> $GITHUB_STEP_SUMMARY
           find dist -type f -exec du -h {} + | sort -rh | head -10 >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Bundle Size Limit Check:" >> $GITHUB_STEP_SUMMARY
+          TOTAL_SIZE=$(du -sb dist | cut -f1)
+          MAX_SIZE=$((300 * 1024 * 1024))  # 300MB limit
+          if [ $TOTAL_SIZE -gt $MAX_SIZE ]; then
+            echo "❌ Bundle size exceeds limit: $(($TOTAL_SIZE / 1024 / 1024))MB > 300MB" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ Bundle size within limit: $(($TOTAL_SIZE / 1024 / 1024))MB" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

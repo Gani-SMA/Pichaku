@@ -36,7 +36,18 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes
     },
     mutations: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Retry on network errors and 5xx errors
+        if (error && typeof error === "object" && "status" in error) {
+          const status = error.status as number;
+          // Don't retry on 4xx errors
+          if (status >= 400 && status < 500) return false;
+          // Retry on 5xx errors
+          if (status >= 500) return failureCount < 2;
+        }
+        // Retry on network errors
+        return failureCount < 2;
+      },
     },
   },
 });
@@ -44,6 +55,18 @@ const queryClient = new QueryClient({
 const LoadingFallback = () => (
   <div className="flex h-[50vh] items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
+
+const AsyncErrorFallback = () => (
+  <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
+    <p className="text-lg text-destructive">Failed to load page</p>
+    <button
+      onClick={() => window.location.reload()}
+      className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
+    >
+      Reload Page
+    </button>
   </div>
 );
 
@@ -69,16 +92,18 @@ const App = () => {
                   <SkipLink href="#navigation">Skip to navigation</SkipLink>
                   <Header />
                   <main id="main-content" className="flex-1" role="main">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/results" element={<Results />} />
-                        <Route path="/chat" element={<Chat />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/case-tracking" element={<CaseTracking />} />
-                        <Route path="*" element={<NotFound />} />
-                      </Routes>
-                    </Suspense>
+                    <ErrorBoundary fallback={<AsyncErrorFallback />}>
+                      <Suspense fallback={<LoadingFallback />}>
+                        <Routes>
+                          <Route path="/" element={<Home />} />
+                          <Route path="/results" element={<Results />} />
+                          <Route path="/chat" element={<Chat />} />
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/case-tracking" element={<CaseTracking />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
+                    </ErrorBoundary>
                   </main>
                   <Footer />
                 </div>
